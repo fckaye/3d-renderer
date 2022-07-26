@@ -52,6 +52,7 @@ void render(void){
     draw_rect(100, 100, 200, 200, 0xFF00FFFF);
     draw_rect(500, 1000, 25, 75, 0xFF330033);
     draw_rect(50, 100, 15, 400, 0x22222222);
+    draw_pixel(25, 25, 0xFFFF00FF);
     
     render_color_buffer();
     clear_color_buffer(0x00000000);
