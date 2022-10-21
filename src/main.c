@@ -12,8 +12,12 @@
 vec3_t cube_points[N_POINTS]; // 9x9x9 cube
 vec2_t projected_points[N_POINTS];
 
-float fov_factor = 128;
+vec3_t camera_position = { .x = 0, .y = 0, .z = -5};
+vec3_t cube_rotation = { .x = 0, .y = 0, .z = 0};
+
+float fov_factor = 640;
 bool is_running = false;
+int previous_frame_time = 0;
 
 void setup(void){
     // Allocate memory in bytes to hold color buffer
@@ -64,18 +68,43 @@ void process_input(void){
 /////////////////////////////////////////////////////
 vec2_t project(vec3_t point){
     vec2_t projected_point = {
-        .x = (fov_factor * point.x),
-        .y = (fov_factor * point.y)
+        .x = (fov_factor * point.x) / point.z,
+        .y = (fov_factor * point.y) / point.z
     };
     return projected_point;
 }
 
 void update(void){
+    // Wait some time until the reaching target frame time in ms
+    int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - previous_frame_time);
+
+    // Delay execution if going too fast
+    if(time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME){
+        SDL_Delay(time_to_wait);
+    }
+
+    // while(!SDL_TICKS_PASSED(SDL_GetTicks(), previous_frame_time + FRAME_TARGET_TIME));
+    
+    //SDL_GetTicks returns number of ms since app started
+    previous_frame_time = SDL_GetTicks();
+
+    cube_rotation.x += 0.01;
+    cube_rotation.y += 0.01;
+    cube_rotation.z += 0.01;
+
     for(int i = 0; i < N_POINTS; i++){
         vec3_t point = cube_points[i];
 
+        vec3_t transformed_point = point;
+        transformed_point = vec3_rotate_x(transformed_point, cube_rotation.x);
+        transformed_point = vec3_rotate_y(transformed_point, cube_rotation.y);
+        transformed_point = vec3_rotate_z(transformed_point, cube_rotation.z);
+
+        // Move points away from camera 
+        transformed_point.z -= camera_position.z;
+
         // Project the current point
-        vec2_t projected_point = project(point);
+        vec2_t projected_point = project(transformed_point);
 
         // Save projected 2D vector in array
         projected_points[i] = projected_point;
@@ -83,8 +112,8 @@ void update(void){
 }
 
 void render(void){
-    uint32_t grid_color = 0xFFFFFFFF;
-    draw_grid(50, true, grid_color);
+    // uint32_t grid_color = 0xFFFFFFFF;
+    // draw_grid(50, true, grid_color);
 
     // Loop projected points and render them
     for(int i = 0; i < N_POINTS; i++){
@@ -106,12 +135,14 @@ void render(void){
 int main(void){
     is_running = initialize_window();
     setup();
+
     while (is_running)
     {
         process_input();
         update();
         render();
     }
+
     destroy_window();
     return 0;
 }
