@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "array.h"
 #include "mesh.h"
 
@@ -50,4 +52,99 @@ void load_cube_mesh_data(void)
         face_t cube_face = cube_faces[i];
         array_push(mesh.faces, cube_face);
     }
+}
+
+void load_obj_file_data(char *filePath)
+{
+    FILE *fp;
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    fp = fopen(filePath, "r");
+    if (fp == NULL)
+        return;
+
+    while ((read = getline(&line, &len, fp)) != -1)
+    {
+        // printf("'%s'\n", line);
+        analyze_line(line);
+    }
+
+    fclose(fp);
+    if (line)
+        free(line);
+}
+
+void analyze_line(char *line)
+{
+    char *delim = " ";
+    char *lineCopy = NULL;
+    lineCopy = strdup(line);
+    printf("\n\n'%s'\n", lineCopy);
+    char *savePtr1;
+
+    char *wordsPtr = strtok_r(lineCopy, delim, &savePtr1);
+
+    printf("words[0] = '%c'\n", wordsPtr[0]);
+    printf("wordsPtr len: '%lu'\n", strlen(wordsPtr));
+    if (wordsPtr[0] == 'v' && strlen(wordsPtr) == 1)
+    {
+        wordsPtr = strtok_r(NULL, delim, &savePtr1);
+        printf("x, wordsPtr: '%s'\n", wordsPtr);
+        float xVal = atof(wordsPtr);
+        wordsPtr = strtok_r(NULL, delim, &savePtr1);
+        printf("y, wordsPtr: '%s'\n", wordsPtr);
+        float yVal = atof(wordsPtr);
+        wordsPtr = strtok_r(NULL, delim, &savePtr1);
+        printf("z, wordsPtr: '%s'\n", wordsPtr);
+        float zVal = atof(wordsPtr);
+
+        printf("\n FOUND VERTEX \n");
+        printf("x: '%f' y: '%f' z: '%f' \n", xVal, yVal, zVal);
+
+        vec3_t vert = {xVal, yVal, zVal};
+        array_push(mesh.vertices, vert);
+    }
+
+    if (wordsPtr[0] == 'f' && strlen(wordsPtr) == 1)
+    {
+        wordsPtr = strtok_r(NULL, delim, &savePtr1);
+        printf("a, wordsPtr: '%s'\n", wordsPtr);
+        // int a = (int)wordsPtr[0];
+        int a = get_face_data(wordsPtr);
+
+        wordsPtr = strtok_r(NULL, delim, &savePtr1);
+        printf("b, wordsPtr: '%s'\n", wordsPtr);
+        // int b = (int)wordsPtr[0];
+        int b = get_face_data(wordsPtr);
+
+        wordsPtr = strtok_r(NULL, delim, &savePtr1);
+        printf("c, wordsPtr: '%s'\n", wordsPtr);
+        // int c = (int)wordsPtr[0];
+        int c = get_face_data(wordsPtr);
+
+        printf("\n FOUND FACE \n");
+        printf("x: '%d' y: '%d' z: '%d' \n", a, b, c);
+        face_t face = {a, b, c};
+        array_push(mesh.faces, face);
+    }
+
+    free(lineCopy);
+}
+
+int get_face_data(char *faceDataItem)
+{
+    char *delim = "/";
+    char *lineCopy = NULL;
+    lineCopy = strdup(faceDataItem);
+    char *savePtr2;
+
+    char *itemsPtr = strtok_r(lineCopy, delim, &savePtr2);
+
+    printf("First item: '%s'\n", itemsPtr);
+    int faceIndex = atoi(itemsPtr);
+    return faceIndex;
+
+    free(lineCopy);
 }
