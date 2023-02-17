@@ -26,6 +26,8 @@ void load_cube_mesh_data(void);
 
 void load_obj_file_data(char *filePath);
 
+void load_obj_file_data_ky(char *filePath);
+
 void analyze_line(char *line);
 
 int get_face_data(char *faceDataItem);
