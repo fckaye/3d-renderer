@@ -38,7 +38,7 @@ void setup(void)
         window_height);
 
     // Loads cube values into mesh data structure
-    load_obj_file_data("./assets/shiba.obj");
+    load_obj_file_data_ky("./assets/shiba.obj");
 }
 
 ////////////////////////////////////////////////////////////////////
