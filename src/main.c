@@ -38,7 +38,7 @@ void setup(void)
         window_height);
 
     // Loads cube values into mesh data structure
-    load_obj_file_data("./assets/cube.obj");
+    load_obj_file_data_ky("./assets/cube.obj");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -184,9 +184,19 @@ void render(void)
         triangle_t triangle = triangles_to_render[i];
 
         // Draw vertex points
-        draw_rect(triangle.points[0].x, triangle.points[0].y, 5, 5, 0xFFFFFF00);
-        draw_rect(triangle.points[1].x, triangle.points[1].y, 5, 5, 0xFFFFFF00);
-        draw_rect(triangle.points[2].x, triangle.points[2].y, 5, 5, 0xFFFFFF00);
+        draw_rect(triangle.points[0].x, triangle.points[0].y, 5, 5, 0xFF000000);
+        draw_rect(triangle.points[1].x, triangle.points[1].y, 5, 5, 0xFF000000);
+        draw_rect(triangle.points[2].x, triangle.points[2].y, 5, 5, 0xFF000000);
+
+        // Draw filled triangle faces
+        draw_filled_triangle(
+            triangle.points[0].x,
+            triangle.points[0].y,
+            triangle.points[1].x,
+            triangle.points[1].y,
+            triangle.points[2].x,
+            triangle.points[2].y,
+            0xFFFFFFFF);
 
         // Draw unfilled triangle edges
         draw_triangle(
@@ -196,8 +206,10 @@ void render(void)
             triangle.points[1].y,
             triangle.points[2].x,
             triangle.points[2].y,
-            0xFF00FF00);
+            0xFF000000);
     }
+
+    // draw_filled_triangle(300, 100, 50, 400, 500, 700, 0xFF00FF00);
 
     // Clear the array of triangles to render every frame
     array_free(triangles_to_render);
