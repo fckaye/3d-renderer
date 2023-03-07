@@ -115,13 +115,31 @@ void draw_filled_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32
         swap(&x0, &x1);
     }
 
-    // Calculate the vertex (Mx,My) using trinagle similarity.
-    int My = y1;
-    int Mx = ((float)(x2 - x0) * (My - y0) / (float)(y2 - y0)) + x0;
+    if (y1 == y2)
+    {
+        // If the triangle already has a flat bottom, just pass it like that.
+        fill_flat_bottom_triangle(x0, y0, x1, y1, x2, y2, color);
+        return;
+    }
+    else if (y0 == y1)
+    {
+        // If the triangle already has a flat top, just pass it like that.
+        fill_flat_top_triangle(x0, y0, x1, y1, x2, y2, color);
+        return;
+    }
+    else
+    {
+        // Not flat horizontal side triangle, divide by midpoint and
+        // perform flat-bottom flat-top approach.
 
-    // Draw Flat-bottom triangle.
-    fill_flat_bottom_triangle(x0, y0, x1, y1, Mx, My, color);
+        // Calculate the vertex (Mx,My) using trinagle similarity.
+        int My = y1;
+        int Mx = ((float)(x2 - x0) * (My - y0) / (float)(y2 - y0)) + x0;
 
-    // Draw Flat-top triangle.
-    fill_flat_top_triangle(x1, y1, Mx, My, x2, y2, color);
+        // Draw Flat-bottom triangle.
+        fill_flat_bottom_triangle(x0, y0, x1, y1, Mx, My, color);
+
+        // Draw Flat-top triangle.
+        fill_flat_top_triangle(x1, y1, Mx, My, x2, y2, color);
+    }
 }

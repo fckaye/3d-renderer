@@ -21,6 +21,17 @@ float fov_factor = 640;
 bool is_running = false;
 int previous_frame_time = 0;
 
+enum render_mode
+{
+    wireframe_and_vertex = 1,
+    only_wireframe = 2,
+    only_faces = 3,
+    wireframe_and_faces = 4
+};
+enum render_mode mode;
+
+bool do_backface_cull = false;
+
 ////////////////////////////////////////////////////////////////////
 // Setup function to initialize variables and game obejcts
 ////////////////////////////////////////////////////////////////////
@@ -38,7 +49,7 @@ void setup(void)
         window_height);
 
     // Loads cube values into mesh data structure
-    load_obj_file_data_ky("./assets/cube.obj");
+    load_obj_file_data_ky("./assets/shiba.obj");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -59,6 +70,37 @@ void process_input(void)
         {
             is_running = false;
         }
+
+        if (event.key.keysym.sym == SDLK_1)
+        {
+            mode = 1;
+        }
+
+        if (event.key.keysym.sym == SDLK_2)
+        {
+            mode = 2;
+        }
+
+        if (event.key.keysym.sym == SDLK_3)
+        {
+            mode = 3;
+        }
+
+        if (event.key.keysym.sym == SDLK_4)
+        {
+            mode = 4;
+        }
+
+        if (event.key.keysym.sym == SDLK_c)
+        {
+            do_backface_cull = true;
+        }
+
+        if (event.key.keysym.sym == SDLK_d)
+        {
+            do_backface_cull = false;
+        }
+
         break;
     }
 }
@@ -128,31 +170,34 @@ void update(void)
             transformed_vertices[j] = transformed_vertex;
         }
 
-        // Check for backface culling
-        vec3_t vector_a = transformed_vertices[0]; /*   A   */
-        vec3_t vector_b = transformed_vertices[1]; /*  / \  */
-        vec3_t vector_c = transformed_vertices[2]; /* C - B */
+        if (do_backface_cull)
+        {
+            // Check for backface culling
+            vec3_t vector_a = transformed_vertices[0]; /*   A   */
+            vec3_t vector_b = transformed_vertices[1]; /*  / \  */
+            vec3_t vector_c = transformed_vertices[2]; /* C - B */
 
-        // Get vectors A to B and A to C
-        vec3_t vector_ab = vec3_sub(vector_b, vector_a);
-        vec3_t vector_ac = vec3_sub(vector_c, vector_a);
-        vec3_normalize(&vector_ab);
-        vec3_normalize(&vector_ac);
+            // Get vectors A to B and A to C
+            vec3_t vector_ab = vec3_sub(vector_b, vector_a);
+            vec3_t vector_ac = vec3_sub(vector_c, vector_a);
+            vec3_normalize(&vector_ab);
+            vec3_normalize(&vector_ac);
 
-        // Get perpendicular from cross product and normalize
-        vec3_t normal = vec3_cross(vector_ab, vector_ac);
-        vec3_normalize(&normal);
+            // Get perpendicular from cross product and normalize
+            vec3_t normal = vec3_cross(vector_ab, vector_ac);
+            vec3_normalize(&normal);
 
-        // Get Camera to A position.
-        vec3_t camera_ray = vec3_sub(camera_position, vector_a);
+            // Get Camera to A position.
+            vec3_t camera_ray = vec3_sub(camera_position, vector_a);
 
-        // Get dot product of camera ray and face normal
-        float dot_cam_normal = vec3_dot(normal, camera_ray);
+            // Get dot product of camera ray and face normal
+            float dot_cam_normal = vec3_dot(normal, camera_ray);
 
-        // Bypass triangles that look away from camera.
-        bool cull = dot_cam_normal < 0;
-        if (cull)
-            continue;
+            // Bypass triangles that look away from camera.
+            bool cull = dot_cam_normal < 0;
+            if (cull)
+                continue;
+        }
 
         // Look all 3 vertices to perform projection
         for (int j = 0; j < 3; j++)
@@ -183,30 +228,39 @@ void render(void)
     {
         triangle_t triangle = triangles_to_render[i];
 
-        // Draw vertex points
-        draw_rect(triangle.points[0].x, triangle.points[0].y, 5, 5, 0xFF000000);
-        draw_rect(triangle.points[1].x, triangle.points[1].y, 5, 5, 0xFF000000);
-        draw_rect(triangle.points[2].x, triangle.points[2].y, 5, 5, 0xFF000000);
+        if (mode == wireframe_and_vertex)
+        {
+            // Draw vertex points
+            draw_rect(triangle.points[0].x, triangle.points[0].y, 5, 5, 0xFFFF0000);
+            draw_rect(triangle.points[1].x, triangle.points[1].y, 5, 5, 0xFFFF0000);
+            draw_rect(triangle.points[2].x, triangle.points[2].y, 5, 5, 0xFFFF0000);
+        }
 
-        // Draw filled triangle faces
-        draw_filled_triangle(
-            triangle.points[0].x,
-            triangle.points[0].y,
-            triangle.points[1].x,
-            triangle.points[1].y,
-            triangle.points[2].x,
-            triangle.points[2].y,
-            0xFFFFFFFF);
+        if (mode == only_faces || mode == wireframe_and_faces)
+        {
+            // Draw filled triangle faces
+            draw_filled_triangle(
+                triangle.points[0].x,
+                triangle.points[0].y,
+                triangle.points[1].x,
+                triangle.points[1].y,
+                triangle.points[2].x,
+                triangle.points[2].y,
+                0xFFFFFFFF);
+        }
 
-        // Draw unfilled triangle edges
-        draw_triangle(
-            triangle.points[0].x,
-            triangle.points[0].y,
-            triangle.points[1].x,
-            triangle.points[1].y,
-            triangle.points[2].x,
-            triangle.points[2].y,
-            0xFF000000);
+        if (mode == wireframe_and_vertex || mode == only_wireframe || mode == wireframe_and_faces)
+        {
+            // Draw unfilled triangle edges
+            draw_triangle(
+                triangle.points[0].x,
+                triangle.points[0].y,
+                triangle.points[1].x,
+                triangle.points[1].y,
+                triangle.points[2].x,
+                triangle.points[2].y,
+                0xFF00FF00);
+        }
     }
 
     // draw_filled_triangle(300, 100, 50, 400, 500, 700, 0xFF00FF00);
