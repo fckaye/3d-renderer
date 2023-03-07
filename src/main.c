@@ -21,22 +21,15 @@ float fov_factor = 640;
 bool is_running = false;
 int previous_frame_time = 0;
 
-enum render_mode
-{
-    wireframe_and_vertex = 1,
-    only_wireframe = 2,
-    only_faces = 3,
-    wireframe_and_faces = 4
-};
-enum render_mode mode;
-
-bool do_backface_cull = false;
-
 ////////////////////////////////////////////////////////////////////
 // Setup function to initialize variables and game obejcts
 ////////////////////////////////////////////////////////////////////
 void setup(void)
 {
+    // Initialize Render mode and culling mode
+    render_method = RENDER_WIRE;
+    cull_method = CULL_BACKFACE;
+
     // Allocate memory in bytes to hold color buffer
     color_buffer = (uint32_t *)malloc(sizeof(uint32_t) * window_width * window_height);
 
@@ -49,7 +42,8 @@ void setup(void)
         window_height);
 
     // Loads cube values into mesh data structure
-    load_obj_file_data_ky("./assets/shiba.obj");
+    // load_obj_file_data("./assets/cube.obj");
+    load_cube_mesh_data();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -66,39 +60,29 @@ void process_input(void)
         is_running = false;
         break;
     case SDL_KEYDOWN:
-        if (event.key.keysym.sym == SDLK_ESCAPE)
+        switch (event.key.keysym.sym)
         {
+        case SDLK_ESCAPE:
             is_running = false;
-        }
-
-        if (event.key.keysym.sym == SDLK_1)
-        {
-            mode = 1;
-        }
-
-        if (event.key.keysym.sym == SDLK_2)
-        {
-            mode = 2;
-        }
-
-        if (event.key.keysym.sym == SDLK_3)
-        {
-            mode = 3;
-        }
-
-        if (event.key.keysym.sym == SDLK_4)
-        {
-            mode = 4;
-        }
-
-        if (event.key.keysym.sym == SDLK_c)
-        {
-            do_backface_cull = true;
-        }
-
-        if (event.key.keysym.sym == SDLK_d)
-        {
-            do_backface_cull = false;
+            break;
+        case SDLK_1:
+            render_method = RENDER_WIRE_VERTEX;
+            break;
+        case SDLK_2:
+            render_method = RENDER_WIRE;
+            break;
+        case SDLK_3:
+            render_method = RENDER_FILL_TRIANGLE;
+            break;
+        case SDLK_4:
+            render_method = RENDER_FILL_TRIANGLE_WIRE;
+            break;
+        case SDLK_c:
+            cull_method = CULL_BACKFACE;
+            break;
+        case SDLK_d:
+            cull_method = CULL_NONE;
+            break;
         }
 
         break;
@@ -152,7 +136,6 @@ void update(void)
         face_vertices[2] = mesh.vertices[mesh_face.c - 1];
 
         vec3_t transformed_vertices[3];
-        triangle_t projected_triangle;
 
         // Loop 3 vertices of current faces and apply transformations
         for (int j = 0; j < 3; j++)
@@ -170,7 +153,7 @@ void update(void)
             transformed_vertices[j] = transformed_vertex;
         }
 
-        if (do_backface_cull)
+        if (cull_method == CULL_BACKFACE)
         {
             // Check for backface culling
             vec3_t vector_a = transformed_vertices[0]; /*   A   */
@@ -199,18 +182,25 @@ void update(void)
                 continue;
         }
 
+        vec2_t projected_points[3];
+
         // Look all 3 vertices to perform projection
         for (int j = 0; j < 3; j++)
         {
             // Project the current vertex
-            vec2_t projected_point = project(transformed_vertices[j]);
+            projected_points[j] = project(transformed_vertices[j]);
 
             // Scale and translate projected point to middle of screen
-            projected_point.x += window_width / 2;
-            projected_point.y += window_height / 2;
-
-            projected_triangle.points[j] = projected_point;
+            projected_points[j].x += window_width / 2;
+            projected_points[j].y += window_height / 2;
         }
+
+        triangle_t projected_triangle = {
+            .points = {
+                {projected_points[0].x, projected_points[0].y},
+                {projected_points[1].x, projected_points[1].y},
+                {projected_points[2].x, projected_points[2].y}},
+            .color = mesh_face.color};
 
         // Save the projected triangle in array of screen space triangles
         array_push(triangles_to_render, projected_triangle);
@@ -228,17 +218,10 @@ void render(void)
     {
         triangle_t triangle = triangles_to_render[i];
 
-        if (mode == wireframe_and_vertex)
+        // Draw filled triangle faces
+        if (render_method == RENDER_FILL_TRIANGLE ||
+            render_method == RENDER_FILL_TRIANGLE_WIRE)
         {
-            // Draw vertex points
-            draw_rect(triangle.points[0].x, triangle.points[0].y, 5, 5, 0xFFFF0000);
-            draw_rect(triangle.points[1].x, triangle.points[1].y, 5, 5, 0xFFFF0000);
-            draw_rect(triangle.points[2].x, triangle.points[2].y, 5, 5, 0xFFFF0000);
-        }
-
-        if (mode == only_faces || mode == wireframe_and_faces)
-        {
-            // Draw filled triangle faces
             draw_filled_triangle(
                 triangle.points[0].x,
                 triangle.points[0].y,
@@ -246,12 +229,14 @@ void render(void)
                 triangle.points[1].y,
                 triangle.points[2].x,
                 triangle.points[2].y,
-                0xFFFFFFFF);
+                triangle.color);
         }
 
-        if (mode == wireframe_and_vertex || mode == only_wireframe || mode == wireframe_and_faces)
+        // Draw unfilled triangle edges
+        if (render_method == RENDER_WIRE ||
+            render_method == RENDER_WIRE_VERTEX ||
+            render_method == RENDER_FILL_TRIANGLE_WIRE)
         {
-            // Draw unfilled triangle edges
             draw_triangle(
                 triangle.points[0].x,
                 triangle.points[0].y,
@@ -260,6 +245,14 @@ void render(void)
                 triangle.points[2].x,
                 triangle.points[2].y,
                 0xFF00FF00);
+        }
+
+        // Draw vertex points
+        if (render_method == RENDER_WIRE_VERTEX)
+        {
+            draw_rect(triangle.points[0].x - 3, triangle.points[0].y - 3, 6, 6, 0xFFFF0000);
+            draw_rect(triangle.points[1].x - 3, triangle.points[1].y - 3, 6, 6, 0xFFFF0000);
+            draw_rect(triangle.points[2].x - 3, triangle.points[2].y - 3, 6, 6, 0xFFFF0000);
         }
     }
 
