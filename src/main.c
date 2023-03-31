@@ -122,11 +122,11 @@ void update(void)
     triangles_to_render = NULL;
 
     // Change the mesh rotation and scale values per frame.
-    // mesh.rotation.x += 0.01;
-    mesh.rotation.y += 0.01;
-    mesh.rotation.z += 0.01;
+    mesh.rotation.x += 0.01;
+    // mesh.rotation.y += 0.01;
+    // mesh.rotation.z += 0.01;
     // mesh.scale.x += 0.002;
-    // mesh.scale.y += 0.001;
+    mesh.scale.y += 0.001;
     // mesh.translation.x += 0.01;
     // mesh.translation.y += 0.01;
     mesh.translation.z = 5.0;
@@ -137,6 +137,14 @@ void update(void)
     mat4_t rotation_matrix_x = mat4_make_rotation_x(mesh.rotation.x);
     mat4_t rotation_matrix_y = mat4_make_rotation_y(mesh.rotation.y);
     mat4_t rotation_matrix_z = mat4_make_rotation_z(mesh.rotation.z);
+
+    // Create a World Matrix combining scale, rotation and translation matrices
+    mat4_t world_matrix = mat4_identity();
+    world_matrix = mat4_mul_mat4(scale_matrix, world_matrix);
+    world_matrix = mat4_mul_mat4(rotation_matrix_z, world_matrix);
+    world_matrix = mat4_mul_mat4(rotation_matrix_y, world_matrix);
+    world_matrix = mat4_mul_mat4(rotation_matrix_x, world_matrix);
+    world_matrix = mat4_mul_mat4(translation_matrix, world_matrix);
 
     // Loop all triangle faces of mesh.
     int num_faces = array_length(mesh.faces);
@@ -156,12 +164,8 @@ void update(void)
         {
             vec4_t transformed_vertex = vec4_from_vec3(face_vertices[j]);
 
-            // Multiply the scale_matrix by the vertex.
-            transformed_vertex = mat4_mul_vec4(scale_matrix, transformed_vertex);
-            transformed_vertex = mat4_mul_vec4(rotation_matrix_x, transformed_vertex);
-            transformed_vertex = mat4_mul_vec4(rotation_matrix_y, transformed_vertex);
-            transformed_vertex = mat4_mul_vec4(rotation_matrix_z, transformed_vertex);
-            transformed_vertex = mat4_mul_vec4(translation_matrix, transformed_vertex);
+            // Multiply the world matrix by the original vector
+            transformed_vertex = mat4_mul_vec4(world_matrix, transformed_vertex);
 
             // Save the transformed vertex unto the array of transformed vertices
             transformed_vertices[j] = transformed_vertex;
