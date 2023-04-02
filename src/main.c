@@ -43,7 +43,7 @@ void setup(void)
 
     // Initialize perspective projection matrix
     float fov = M_PI / 3.0; // Same as 180 / 3 i.e. 60deg but in rad
-    float aspect = (float)window_width / (float)window_height;
+    float aspect = (float)window_height / (float)window_width;
     float znear = 0.1;
     float zfar = 100.0;
     proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
