@@ -210,6 +210,9 @@ void update(void)
             projected_points[j].x *= (window_width / 2.0);
             projected_points[j].y *= (window_height / 2.0);
 
+            // Invert y values to account for flipped screen y coordinates.
+            projected_points[j].y *= -1;
+
             // Translate projected point to middle of screen
             projected_points[j].x += (window_width / 2.0);
             projected_points[j].y += (window_height / 2.0);
