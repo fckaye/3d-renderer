@@ -7,6 +7,7 @@
 #include "vector.h"
 #include "mesh.h"
 #include "matrix.h"
+#include "light.h"
 
 ////////////////////////////////////////////////////////////////////
 // Array of triangles to be rendered frame by frame
@@ -20,19 +21,6 @@ bool is_running = false;
 int previous_frame_time = 0;
 vec3_t camera_position = {.x = 0, .y = 0, .z = 0};
 mat4_t proj_matrix;
-// Set light direction.
-vec3_t light_dir = {2, -2, 2};
-
-uint32_t light_apply_intensity(uint32_t original_color, float percentage_factor)
-{
-    uint32_t a = (original_color & 0xFF000000);
-    uint32_t r = (original_color & 0x00FF0000) * percentage_factor;
-    uint32_t g = (original_color & 0x0000FF00) * percentage_factor;
-    uint32_t b = (original_color & 0x000000FF) * percentage_factor;
-
-    uint32_t new_color = a | (r & 0x00FF0000) | (g & 0x0000FF00) | (b & 0x000000FF);
-    return new_color;
-}
 
 ////////////////////////////////////////////////////////////////////
 // Setup function to initialize variables and game obejcts
@@ -62,8 +50,8 @@ void setup(void)
     proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
 
     // Loads cube values into mesh data structure
-    // load_obj_file_data("./assets/cube.obj");
-    load_cube_mesh_data();
+    load_obj_file_data("./assets/f22.obj");
+    // load_cube_mesh_data();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -180,43 +168,35 @@ void update(void)
             transformed_vertices[j] = transformed_vertex;
         }
 
-        vec3_t normal = {0, 0, 0};
+        // Check for backface culling
+        vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]); /*   A   */
+        vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]); /*  / \  */
+        vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]); /* C - B */
+
+        // Get vectors A to B and A to C
+        vec3_t vector_ab = vec3_sub(vector_b, vector_a);
+        vec3_t vector_ac = vec3_sub(vector_c, vector_a);
+        vec3_normalize(&vector_ab);
+        vec3_normalize(&vector_ac);
+
+        // Get perpendicular from cross product and normalize
+        vec3_t normal = vec3_cross(vector_ab, vector_ac);
+        vec3_normalize(&normal);
+
+        // Get Camera to A position.
+        vec3_t camera_ray = vec3_sub(camera_position, vector_a);
+
+        // Get dot product of camera ray and face normal
+        float dot_cam_normal = vec3_dot(normal, camera_ray);
+
         // Apply backface culling
         if (cull_method == CULL_BACKFACE)
         {
-            // Check for backface culling
-            vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]); /*   A   */
-            vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]); /*  / \  */
-            vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]); /* C - B */
-
-            // Get vectors A to B and A to C
-            vec3_t vector_ab = vec3_sub(vector_b, vector_a);
-            vec3_t vector_ac = vec3_sub(vector_c, vector_a);
-            vec3_normalize(&vector_ab);
-            vec3_normalize(&vector_ac);
-
-            // Get perpendicular from cross product and normalize
-            normal = vec3_cross(vector_ab, vector_ac);
-            vec3_normalize(&normal);
-
-            // Get Camera to A position.
-            vec3_t camera_ray = vec3_sub(camera_position, vector_a);
-
-            // Get dot product of camera ray and face normal
-            float dot_cam_normal = vec3_dot(normal, camera_ray);
-
             // Bypass triangles that look away from camera.
             bool cull = dot_cam_normal < 0;
             if (cull)
                 continue;
         }
-
-        // Apply lighting
-        vec3_normalize(&light_dir);
-        float dot_light_normal = vec3_dot(normal, light_dir); // values from 0 to 1, where 0 = 90deg and 1 0deg angle
-        float alignmentPercentage = (dot_light_normal + 1) / 2;
-        // float alignmentPercentage = dot_light_normal * 100;
-        uint32_t newFaceColor = light_apply_intensity(mesh_face.color, alignmentPercentage);
 
         vec4_t projected_points[3];
 
@@ -242,13 +222,17 @@ void update(void)
                                   transformed_vertices[2].z) /
                           3;
 
+        // Calculate shade intensity based on alignment of the triangle normal and the inverse of the light direction
+        float light_intensity_factor = -vec3_dot(normal, light.direction);
+        // Calculate triangle color based on light angle
+        uint32_t triangle_color = light_apply_intensity(mesh_face.color, light_intensity_factor);
+
         triangle_t projected_triangle = {
             .points = {
                 {projected_points[0].x, projected_points[0].y},
                 {projected_points[1].x, projected_points[1].y},
                 {projected_points[2].x, projected_points[2].y}},
-            // .color = mesh_face.color,
-            .color = newFaceColor,
+            .color = triangle_color,
             .avg_depth = avg_depth};
 
         // Save the projected triangle in array of screen space triangles
