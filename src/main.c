@@ -20,6 +20,19 @@ bool is_running = false;
 int previous_frame_time = 0;
 vec3_t camera_position = {.x = 0, .y = 0, .z = 0};
 mat4_t proj_matrix;
+// Set light direction.
+vec3_t light_dir = {2, -2, 2};
+
+uint32_t light_apply_intensity(uint32_t original_color, float percentage_factor)
+{
+    uint32_t a = (original_color & 0xFF000000);
+    uint32_t r = (original_color & 0x00FF0000) * percentage_factor;
+    uint32_t g = (original_color & 0x0000FF00) * percentage_factor;
+    uint32_t b = (original_color & 0x000000FF) * percentage_factor;
+
+    uint32_t new_color = a | (r & 0x00FF0000) | (g & 0x0000FF00) | (b & 0x000000FF);
+    return new_color;
+}
 
 ////////////////////////////////////////////////////////////////////
 // Setup function to initialize variables and game obejcts
@@ -118,8 +131,8 @@ void update(void)
 
     // Change the mesh rotation and scale values per frame.
     mesh.rotation.x += 0.01;
-    // mesh.rotation.y += 0.01;
-    // mesh.rotation.z += 0.01;
+    mesh.rotation.y += 0.01;
+    mesh.rotation.z += 0.01;
     // mesh.scale.x += 0.002;
     // mesh.scale.y += 0.001;
     // mesh.translation.x += 0.01;
@@ -167,6 +180,8 @@ void update(void)
             transformed_vertices[j] = transformed_vertex;
         }
 
+        vec3_t normal = {0, 0, 0};
+        // Apply backface culling
         if (cull_method == CULL_BACKFACE)
         {
             // Check for backface culling
@@ -181,7 +196,7 @@ void update(void)
             vec3_normalize(&vector_ac);
 
             // Get perpendicular from cross product and normalize
-            vec3_t normal = vec3_cross(vector_ab, vector_ac);
+            normal = vec3_cross(vector_ab, vector_ac);
             vec3_normalize(&normal);
 
             // Get Camera to A position.
@@ -195,6 +210,13 @@ void update(void)
             if (cull)
                 continue;
         }
+
+        // Apply lighting
+        vec3_normalize(&light_dir);
+        float dot_light_normal = vec3_dot(normal, light_dir); // values from 0 to 1, where 0 = 90deg and 1 0deg angle
+        float alignmentPercentage = (dot_light_normal + 1) / 2;
+        // float alignmentPercentage = dot_light_normal * 100;
+        uint32_t newFaceColor = light_apply_intensity(mesh_face.color, alignmentPercentage);
 
         vec4_t projected_points[3];
 
@@ -225,7 +247,8 @@ void update(void)
                 {projected_points[0].x, projected_points[0].y},
                 {projected_points[1].x, projected_points[1].y},
                 {projected_points[2].x, projected_points[2].y}},
-            .color = mesh_face.color,
+            // .color = mesh_face.color,
+            .color = newFaceColor,
             .avg_depth = avg_depth};
 
         // Save the projected triangle in array of screen space triangles
@@ -297,8 +320,6 @@ void render(void)
             draw_rect(triangle.points[2].x - 3, triangle.points[2].y - 3, 6, 6, 0xFFFF0000);
         }
     }
-
-    // draw_filled_triangle(300, 100, 50, 400, 500, 700, 0xFF00FF00);
 
     // Clear the array of triangles to render every frame
     array_free(triangles_to_render);
