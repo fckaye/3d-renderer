@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
+#include "upng.h"
 #include "array.h"
 #include "display.h"
 #include "vector.h"
@@ -39,7 +40,7 @@ void setup(void)
     // Create SDL texture used to display the color buffer
     color_buffer_texture = SDL_CreateTexture(
         renderer,
-        SDL_PIXELFORMAT_ARGB8888,
+        SDL_PIXELFORMAT_RGBA32,
         SDL_TEXTUREACCESS_STREAMING,
         window_width,
         window_height);
@@ -51,14 +52,13 @@ void setup(void)
     float zfar = 100.0;
     proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
 
-    // Manually load hardcoded texture data from static array
-    mesh_texture = (uint32_t *)REDBRICK_TEXTURE;
-    texture_width = 64;
-    texture_height = 64;
-
     // Loads cube values into mesh data structure
+    load_obj_file_data("./assets/cube.obj");
     // load_obj_file_data("./assets/f22.obj");
-    load_cube_mesh_data();
+    // load_cube_mesh_data();
+
+    // Load the texture information from an external png file
+    load_png_teture_data("./assets/cube.png");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -131,9 +131,9 @@ void update(void)
     triangles_to_render = NULL;
 
     // Change the mesh rotation and scale values per frame.
-    mesh.rotation.x += 0.01;
+    // mesh.rotation.x += 0.01;
     mesh.rotation.y += 0.01;
-    mesh.rotation.z += 0.01;
+    // mesh.rotation.z += 0.01;
     // mesh.scale.x += 0.002;
     // mesh.scale.y += 0.001;
     // mesh.translation.x += 0.01;
@@ -154,9 +154,9 @@ void update(void)
         face_t mesh_face = mesh.faces[i];
 
         vec3_t face_vertices[3];
-        face_vertices[0] = mesh.vertices[mesh_face.a - 1];
-        face_vertices[1] = mesh.vertices[mesh_face.b - 1];
-        face_vertices[2] = mesh.vertices[mesh_face.c - 1];
+        face_vertices[0] = mesh.vertices[mesh_face.a];
+        face_vertices[1] = mesh.vertices[mesh_face.b];
+        face_vertices[2] = mesh.vertices[mesh_face.c];
 
         vec4_t transformed_vertices[3];
 
@@ -353,6 +353,7 @@ void render(void)
 void free_resources(void)
 {
     free(color_buffer);
+    upng_free(png_texture);
     array_free(mesh.faces);
     array_free(mesh.vertices);
 }
