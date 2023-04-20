@@ -53,12 +53,11 @@ void setup(void)
     proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
 
     // Loads cube values into mesh data structure
-    load_obj_file_data("./assets/cube.obj");
-    // load_obj_file_data("./assets/f22.obj");
+    load_obj_file_data("./assets/crab.obj");
     // load_cube_mesh_data();
 
     // Load the texture information from an external png file
-    load_png_teture_data("./assets/cube.png");
+    load_png_teture_data("./assets/crab.png");
 }
 
 ////////////////////////////////////////////////////////////////////
