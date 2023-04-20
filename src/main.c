@@ -53,11 +53,11 @@ void setup(void)
     proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
 
     // Loads cube values into mesh data structure
-    load_obj_file_data("./assets/crab.obj");
+    load_obj_file_data("./assets/minecraft_dirt.obj");
     // load_cube_mesh_data();
 
     // Load the texture information from an external png file
-    load_png_teture_data("./assets/crab.png");
+    load_png_teture_data("./assets/minecraft_dirt.png");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -130,9 +130,9 @@ void update(void)
     triangles_to_render = NULL;
 
     // Change the mesh rotation and scale values per frame.
-    // mesh.rotation.x += 0.01;
+    mesh.rotation.x -= 0.001;
     mesh.rotation.y += 0.01;
-    // mesh.rotation.z += 0.01;
+    mesh.rotation.z += 0.004;
     // mesh.scale.x += 0.002;
     // mesh.scale.y += 0.001;
     // mesh.translation.x += 0.01;
