@@ -214,7 +214,21 @@ void draw_texel(
     int tex_x = abs((int)(interpolated_u * texture_width)) % texture_width;
     int tex_y = abs((int)(interpolated_v * texture_height)) % texture_height;
 
-    draw_pixel(x, y, texture[(tex_y * texture_width) + tex_x]);
+    // Adjust 1/w so the pixels that are closer to camera have smaller values (0).
+    // and pixels further away from camera have bigger values (1)
+    interpolated_reciprocal_w = 1 - interpolated_reciprocal_w;
+
+    // Only draw pixel if depth value is less than the one previously stored in z-buffer
+    // This way, only render this pixel if it is closer to the camera than whatever pixel was there before
+    if (interpolated_reciprocal_w < z_buffer[(window_width * y) + x])
+    {
+
+        // Draw a pixel at position (x,y) with the color obtained from the mapped texture
+        draw_pixel(x, y, texture[(tex_y * texture_width) + tex_x]);
+
+        // Update the z-buffer value with 1/w of the current pixel
+        z_buffer[(window_width * y) + x] = interpolated_reciprocal_w;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////

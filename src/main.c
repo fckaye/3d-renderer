@@ -34,8 +34,9 @@ void setup(void)
     render_method = RENDER_WIRE;
     cull_method = CULL_BACKFACE;
 
-    // Allocate memory in bytes to hold color buffer
+    // Allocate memory in bytes to hold color buffer and z buffer
     color_buffer = (uint32_t *)malloc(sizeof(uint32_t) * window_width * window_height);
+    z_buffer = (float *)malloc(sizeof(float) * window_width * window_height);
 
     // Create SDL texture used to display the color buffer
     color_buffer_texture = SDL_CreateTexture(
@@ -53,11 +54,13 @@ void setup(void)
     proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
 
     // Loads cube values into mesh data structure
-    load_obj_file_data("./assets/minecraft_dirt.obj");
+    // load_obj_file_data("./assets/minecraft_dirt.obj");
+    load_obj_file_data("./assets/f22.obj");
     // load_cube_mesh_data();
 
     // Load the texture information from an external png file
-    load_png_teture_data("./assets/minecraft_dirt.png");
+    // load_png_teture_data("./assets/minecraft_dirt.png");
+    load_png_teture_data("./assets/f22.png");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -130,9 +133,9 @@ void update(void)
     triangles_to_render = NULL;
 
     // Change the mesh rotation and scale values per frame.
-    mesh.rotation.x -= 0.001;
-    mesh.rotation.y += 0.01;
-    mesh.rotation.z += 0.004;
+    mesh.rotation.x += 0.001;
+    mesh.rotation.y += 0.001;
+    mesh.rotation.z += 0.001;
     // mesh.scale.x += 0.002;
     // mesh.scale.y += 0.001;
     // mesh.translation.x += 0.01;
@@ -342,6 +345,7 @@ void render(void)
 
     render_color_buffer();
     clear_color_buffer(0x00000000);
+    clear_z_buffer();
 
     SDL_RenderPresent(renderer);
 }
@@ -352,6 +356,7 @@ void render(void)
 void free_resources(void)
 {
     free(color_buffer);
+    free(z_buffer);
     upng_free(png_texture);
     array_free(mesh.faces);
     array_free(mesh.vertices);
