@@ -15,7 +15,9 @@
 ////////////////////////////////////////////////////////////////////
 // Array of triangles to be rendered frame by frame
 ////////////////////////////////////////////////////////////////////
-triangle_t *triangles_to_render = NULL;
+#define MAX_TRIANGLES_PER_MESH 10000
+triangle_t triangles_to_render[MAX_TRIANGLES_PER_MESH];
+int num_triangles_to_render = 0;
 
 ////////////////////////////////////////////////////////////////////
 // Global variables for execution status and game loop
@@ -55,12 +57,12 @@ void setup(void)
 
     // Loads cube values into mesh data structure
     // load_obj_file_data("./assets/minecraft_dirt.obj");
-    load_obj_file_data("./assets/f22.obj");
+    load_obj_file_data("./assets/drone.obj");
     // load_cube_mesh_data();
 
     // Load the texture information from an external png file
     // load_png_teture_data("./assets/minecraft_dirt.png");
-    load_png_teture_data("./assets/f22.png");
+    load_png_teture_data("./assets/drone.png");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -129,8 +131,8 @@ void update(void)
     // SDL_GetTicks returns number of ms since app started
     previous_frame_time = SDL_GetTicks();
 
-    // Initialize the array of triangles to render
-    triangles_to_render = NULL;
+    // Initialize the counter of triangles to render for this frame
+    num_triangles_to_render = 0;
 
     // Change the mesh rotation and scale values per frame.
     mesh.rotation.x += 0.001;
@@ -233,13 +235,6 @@ void update(void)
             projected_points[j].y += (window_height / 2.0);
         }
 
-        // Calculate the average depth for each face based on the vertices
-        // z value after transformations
-        float avg_depth = (float)(transformed_vertices[0].z +
-                                  transformed_vertices[1].z +
-                                  transformed_vertices[2].z) /
-                          3;
-
         // Calculate shade intensity based on alignment of the triangle normal and the inverse of the light direction
         float light_intensity_factor = -vec3_dot(normal, light.direction);
         // Calculate triangle color based on light angle
@@ -256,25 +251,13 @@ void update(void)
                 {mesh_face.c_uv.u, mesh_face.c_uv.v},
             },
             .color = triangle_color,
-            .avg_depth = avg_depth};
+        };
 
         // Save the projected triangle in array of screen space triangles
-        array_push(triangles_to_render, projected_triangle);
-    }
-
-    // Sort triangles to render by their avg_depth
-    int num_triangles = array_length(triangles_to_render);
-    for (int i = 0; i < num_triangles; i++)
-    {
-        for (int j = i; j < num_triangles; j++)
+        if (num_triangles_to_render < MAX_TRIANGLES_PER_MESH)
         {
-            if (triangles_to_render[i].avg_depth < triangles_to_render[j].avg_depth)
-            {
-                // Swap triangle positions in array.
-                triangle_t temp = triangles_to_render[i];
-                triangles_to_render[i] = triangles_to_render[j];
-                triangles_to_render[j] = temp;
-            }
+            triangles_to_render[num_triangles_to_render] = projected_triangle;
+            num_triangles_to_render++;
         }
     }
 }
@@ -285,8 +268,7 @@ void update(void)
 void render(void)
 {
     // Loop projected points and render them
-    int num_triangles = array_length(triangles_to_render);
-    for (int i = 0; i < num_triangles; i++)
+    for (int i = 0; i < num_triangles_to_render; i++)
     {
         triangle_t triangle = triangles_to_render[i];
 
@@ -295,12 +277,9 @@ void render(void)
             render_method == RENDER_FILL_TRIANGLE_WIRE)
         {
             draw_filled_triangle(
-                triangle.points[0].x,
-                triangle.points[0].y,
-                triangle.points[1].x,
-                triangle.points[1].y,
-                triangle.points[2].x,
-                triangle.points[2].y,
+                triangle.points[0].x, triangle.points[0].y, triangle.points[0].z, triangle.points[0].w,
+                triangle.points[1].x, triangle.points[1].y, triangle.points[1].z, triangle.points[1].w,
+                triangle.points[2].x, triangle.points[2].y, triangle.points[2].z, triangle.points[2].w,
                 triangle.color);
         }
 
@@ -339,9 +318,6 @@ void render(void)
             draw_rect(triangle.points[2].x - 3, triangle.points[2].y - 3, 6, 6, 0xFFFF0000);
         }
     }
-
-    // Clear the array of triangles to render every frame
-    array_free(triangles_to_render);
 
     render_color_buffer();
     clear_color_buffer(0x00000000);
