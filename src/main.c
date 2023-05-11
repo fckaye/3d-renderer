@@ -64,12 +64,12 @@ void setup(void)
 
     // Loads cube values into mesh data structure
     // load_obj_file_data("./assets/minecraft_dirt.obj");
-    load_obj_file_data("./assets/drone.obj");
+    load_obj_file_data("./assets/f22.obj");
     // load_cube_mesh_data();
 
     // Load the texture information from an external png file
     // load_png_teture_data("./assets/minecraft_dirt.png");
-    load_png_teture_data("./assets/drone.png");
+    load_png_teture_data("./assets/f22.png");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -86,37 +86,42 @@ void process_input(void)
         is_running = false;
         break;
     case SDL_KEYDOWN:
-        switch (event.key.keysym.sym)
-        {
-        case SDLK_ESCAPE:
+        if (event.key.keysym.sym == SDLK_ESCAPE)
             is_running = false;
-            break;
-        case SDLK_1:
+        if (event.key.keysym.sym == SDLK_1)
             render_method = RENDER_WIRE_VERTEX;
-            break;
-        case SDLK_2:
+        if (event.key.keysym.sym == SDLK_2)
             render_method = RENDER_WIRE;
-            break;
-        case SDLK_3:
+        if (event.key.keysym.sym == SDLK_3)
             render_method = RENDER_FILL_TRIANGLE;
-            break;
-        case SDLK_4:
+        if (event.key.keysym.sym == SDLK_4)
             render_method = RENDER_FILL_TRIANGLE_WIRE;
-            break;
-        case SDLK_5:
+        if (event.key.keysym.sym == SDLK_5)
             render_method = RENDER_TEXTURED;
-            break;
-        case SDLK_6:
+        if (event.key.keysym.sym == SDLK_6)
             render_method = RENDER_TEXTURED_WIRE;
-            break;
-        case SDLK_c:
+        if (event.key.keysym.sym == SDLK_c)
             cull_method = CULL_BACKFACE;
-            break;
-        case SDLK_d:
+        if (event.key.keysym.sym == SDLK_x)
             cull_method = CULL_NONE;
-            break;
+        if (event.key.keysym.sym == SDLK_UP)
+            camera.position.y += 3.0 * delta_time;
+        if (event.key.keysym.sym == SDLK_DOWN)
+            camera.position.y -= 3.0 * delta_time;
+        if (event.key.keysym.sym == SDLK_a)
+            camera.yaw -= 1.0 * delta_time;
+        if (event.key.keysym.sym == SDLK_d)
+            camera.yaw += 1.0 * delta_time;
+        if (event.key.keysym.sym == SDLK_w)
+        {
+            camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
+            camera.position = vec3_add(camera.position, camera.forward_velocity);
         }
-
+        if (event.key.keysym.sym == SDLK_s)
+        {
+            camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
+            camera.position = vec3_sub(camera.position, camera.forward_velocity);
+        }
         break;
     }
 }
@@ -136,7 +141,7 @@ void update(void)
     }
 
     // Get a delta time factor converted to seconds to be used to update game movements
-    float delta_time = (SDL_GetTicks() - previous_frame_time) / 1000.0;
+    delta_time = (SDL_GetTicks() - previous_frame_time) / 1000.0;
 
     // SDL_GetTicks returns number of ms since app started
     previous_frame_time = SDL_GetTicks();
@@ -145,19 +150,22 @@ void update(void)
     num_triangles_to_render = 0;
 
     // Change the mesh rotation and scale values per frame.
-    mesh.rotation.x += 0.6 * delta_time;
-    mesh.rotation.y += 0.6 * delta_time;
-    mesh.rotation.z += 0.6 * delta_time;
-    // mesh.translation.y += 1.0 * delta_time;
+    mesh.rotation.x += 0.0 * delta_time;
+    mesh.rotation.y += 0.0 * delta_time;
+    mesh.rotation.z += 0.0 * delta_time;
     mesh.translation.z = 5.0;
 
-    // Change the camera position per animation frame
-    // camera.position.x += 0.5 * delta_time;
-    // camera.position.y += 0.8 * delta_time;
+    // Find the target point based on camera forward velocity and yaw.
+    // Initialize the target as a normalized positive z axis
+    vec3_t target = {0, 0, 1};
+    mat4_t camera_yaw_rotation = mat4_make_rotation_y(camera.yaw);
+    camera.direction = vec3_from_vec4(mat4_mul_vec4(camera_yaw_rotation, vec4_from_vec3(target)));
 
-    // Create the view matrix looking at a hardcoded target point
-    vec3_t target = {0, 0, 4.0};
+    // Offset the camera position in the direction the camera is pointing at
+    target = vec3_add(camera.position, camera.direction);
     vec3_t up_direction = {0, 1, 0};
+
+    // Create the view matrix
     mat4_t view_matrix = mat4_look_at(camera.position, target, up_direction);
 
     // Create a scale matrix to multiply the mesh vertices
