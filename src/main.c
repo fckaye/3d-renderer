@@ -12,6 +12,7 @@
 #include "texture.h"
 #include "triangle.h"
 #include "camera.h"
+#include "clipping.h"
 
 ////////////////////////////////////////////////////////////////////
 // Array of triangles to be rendered frame by frame
@@ -58,18 +59,21 @@ void setup(void)
     // Initialize perspective projection matrix
     float fov = M_PI / 3.0; // Same as 180 / 3 i.e. 60deg but in rad
     float aspect = (float)window_height / (float)window_width;
-    float znear = 0.1;
-    float zfar = 100.0;
-    proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
+    float z_near = 0.1;
+    float z_far = 100.0;
+    proj_matrix = mat4_make_perspective(fov, aspect, z_near, z_far);
+
+    // Initialize frustum planes with point and normal
+    init_frustum_planes(fov, z_near, z_far);
 
     // Loads cube values into mesh data structure
     // load_obj_file_data("./assets/minecraft_dirt.obj");
-    load_obj_file_data("./assets/f22.obj");
+    load_obj_file_data("./assets/minecraft_dirt.obj");
     // load_cube_mesh_data();
 
     // Load the texture information from an external png file
     // load_png_teture_data("./assets/minecraft_dirt.png");
-    load_png_teture_data("./assets/f22.png");
+    load_png_teture_data("./assets/minecraft_dirt.png");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -150,9 +154,9 @@ void update(void)
     num_triangles_to_render = 0;
 
     // Change the mesh rotation and scale values per frame.
-    mesh.rotation.x += 0.0 * delta_time;
-    mesh.rotation.y += 0.0 * delta_time;
-    mesh.rotation.z += 0.0 * delta_time;
+    mesh.rotation.x += 0.1 * delta_time;
+    mesh.rotation.y += 0.1 * delta_time;
+    mesh.rotation.z += 0.1 * delta_time;
     mesh.translation.z = 5.0;
 
     // Find the target point based on camera forward velocity and yaw.
