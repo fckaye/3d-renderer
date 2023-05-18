@@ -67,13 +67,10 @@ void setup(void)
     init_frustum_planes(fov, z_near, z_far);
 
     // Loads cube values into mesh data structure
-    // load_obj_file_data("./assets/minecraft_dirt.obj");
-    load_obj_file_data("./assets/minecraft_dirt.obj");
-    // load_cube_mesh_data();
+    load_obj_file_data("./assets/cube.obj");
 
     // Load the texture information from an external png file
-    // load_png_teture_data("./assets/minecraft_dirt.png");
-    load_png_teture_data("./assets/minecraft_dirt.png");
+    load_png_teture_data("./assets/cube.png");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -154,9 +151,9 @@ void update(void)
     num_triangles_to_render = 0;
 
     // Change the mesh rotation and scale values per frame.
-    mesh.rotation.x += 0.1 * delta_time;
-    mesh.rotation.y += 0.1 * delta_time;
-    mesh.rotation.z += 0.1 * delta_time;
+    // mesh.rotation.x += 0.1 * delta_time;
+    // mesh.rotation.y += 0.1 * delta_time;
+    // mesh.rotation.z += 0.1 * delta_time;
     mesh.translation.z = 5.0;
 
     // Find the target point based on camera forward velocity and yaw.
@@ -183,6 +180,11 @@ void update(void)
     int num_faces = array_length(mesh.faces);
     for (int i = 0; i < num_faces; i++)
     {
+        if (i != 4)
+        {
+            continue;
+        }
+
         face_t mesh_face = mesh.faces[i];
 
         vec3_t face_vertices[3];
@@ -246,6 +248,20 @@ void update(void)
             if (cull)
                 continue;
         }
+
+        // Create a polygon from the original triangle to be clipped
+        polygon_t polygon = create_polygon_from_triangle(
+            vec3_from_vec4(transformed_vertices[0]),
+            vec3_from_vec4(transformed_vertices[1]),
+            vec3_from_vec4(transformed_vertices[2]));
+
+        // TODO: After clipping, break the polygon in triangles
+        clip_polygon(&polygon);
+
+        // if (polygon.num_vertices > 3)
+        // {
+        printf("Number of polygon vertices after clipping: %d \n", polygon.num_vertices);
+        // }
 
         vec4_t projected_points[3];
 
