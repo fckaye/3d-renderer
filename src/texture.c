@@ -22,6 +22,12 @@ void load_png_teture_data(char *filename)
     }
 }
 
+tex2_t tex2_clone(tex2_t *t)
+{
+    tex2_t result = {t->u, t->v};
+    return result;
+}
+
 const uint8_t REDBRICK_TEXTURE[] = {
     0xFF,
     0xFF,
