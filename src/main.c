@@ -44,6 +44,9 @@ void setup(void)
     set_render_method(RENDER_WIRE);
     set_cull_method(CULL_BACKFACE);
 
+    // Initialize scene light direction
+    init_light(vec3_new(0, 0, 1));
+
     // Initialize perspective projection matrix
     float aspect_x = (float)get_window_width() / (float)get_window_height();
     float aspect_y = (float)get_window_height() / (float)get_window_width();
@@ -320,7 +323,7 @@ void update(void)
             }
 
             // Calculate shade intensity based on alignment of the triangle normal and the inverse of the light direction
-            float light_intensity_factor = -vec3_dot(normal, light.direction);
+            float light_intensity_factor = -vec3_dot(normal, get_light_direction());
             // Calculate triangle color based on light angle
             uint32_t triangle_color = light_apply_intensity(mesh_face.color, light_intensity_factor);
 
