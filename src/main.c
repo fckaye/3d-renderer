@@ -57,10 +57,10 @@ void setup(void)
     init_frustum_planes(fov_x, fov_y, z_near, z_far);
 
     // Loads cube values into mesh data structure
-    load_obj_file_data("./assets/f117.obj");
+    load_obj_file_data("./assets/efa.obj");
 
     // Load the texture information from an external png file
-    load_png_teture_data("./assets/f117.png");
+    load_png_teture_data("./assets/efa.png");
 }
 
 ////////////////////////////////////////////////////////////////////
