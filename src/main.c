@@ -127,34 +127,34 @@ void process_input(void)
             }
             if (event.key.keysym.sym == SDLK_UP)
             {
-                camera.position.y += 3.0 * delta_time;
+                update_camera_forward_velocity(vec3_mul(get_camera_direction(), 5.0 * delta_time));
+                update_camera_position(vec3_add(get_camera_position(), get_camera_forward_velocity()));
                 break;
             }
             if (event.key.keysym.sym == SDLK_DOWN)
             {
-                camera.position.y -= 3.0 * delta_time;
-                break;
-            }
-            if (event.key.keysym.sym == SDLK_a)
-            {
-                camera.yaw -= 1.0 * delta_time;
-                break;
-            }
-            if (event.key.keysym.sym == SDLK_d)
-            {
-                camera.yaw += 1.0 * delta_time;
+                update_camera_forward_velocity(vec3_mul(get_camera_direction(), 5.0 * delta_time));
+                update_camera_position(vec3_sub(get_camera_position(), get_camera_forward_velocity()));
                 break;
             }
             if (event.key.keysym.sym == SDLK_w)
             {
-                camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
-                camera.position = vec3_add(camera.position, camera.forward_velocity);
+                rotate_camera_pitch(+3.0 * delta_time);
                 break;
             }
             if (event.key.keysym.sym == SDLK_s)
             {
-                camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
-                camera.position = vec3_sub(camera.position, camera.forward_velocity);
+                rotate_camera_pitch(-3.0 * delta_time);
+                break;
+            }
+            if (event.key.keysym.sym == SDLK_RIGHT)
+            {
+                rotate_camera_yaw(+1.0 * delta_time);
+                break;
+            }
+            if (event.key.keysym.sym == SDLK_LEFT)
+            {
+                rotate_camera_yaw(-1.0 * delta_time);
                 break;
             }
             break;
@@ -191,25 +191,17 @@ void update(void)
     // mesh.rotation.z += 0.1 * delta_time;
     mesh.translation.z = 5.0;
 
-    // Find the target point based on camera forward velocity and yaw.
-    // Initialize the target as a normalized positive z axis
-    vec3_t target = {0, 0, 1};
-    mat4_t camera_yaw_rotation = mat4_make_rotation_y(camera.yaw);
-    camera.direction = vec3_from_vec4(mat4_mul_vec4(camera_yaw_rotation, vec4_from_vec3(target)));
-
-    // Offset the camera position in the direction the camera is pointing at
-    target = vec3_add(camera.position, camera.direction);
-    vec3_t up_direction = {0, 1, 0};
-
-    // Create the view matrix
-    mat4_t view_matrix = mat4_look_at(camera.position, target, up_direction);
-
     // Create a scale matrix to multiply the mesh vertices
     mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
     mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
     mat4_t rotation_matrix_x = mat4_make_rotation_x(mesh.rotation.x);
     mat4_t rotation_matrix_y = mat4_make_rotation_y(mesh.rotation.y);
     mat4_t rotation_matrix_z = mat4_make_rotation_z(mesh.rotation.z);
+
+    // Update camera look at target to create view matrix
+    vec3_t target = get_camera_lookat_target();
+    vec3_t up_direction = vec3_new(0, 1, 0);
+    mat4_t view_matrix = mat4_look_at(get_camera_position(), target, up_direction);
 
     // Loop all triangle faces of mesh.
     int num_faces = array_length(mesh.faces);
