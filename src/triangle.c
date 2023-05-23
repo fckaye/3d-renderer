@@ -3,6 +3,26 @@
 #include "display.h"
 #include "swap.h"
 
+vec3_t get_triangle_normal(vec4_t vertices[3])
+{
+    // Check for backface culling
+    vec3_t vector_a = vec3_from_vec4(vertices[0]); /*   A   */
+    vec3_t vector_b = vec3_from_vec4(vertices[1]); /*  / \  */
+    vec3_t vector_c = vec3_from_vec4(vertices[2]); /* C - B */
+
+    // Get vectors A to B and A to C
+    vec3_t vector_ab = vec3_sub(vector_b, vector_a);
+    vec3_t vector_ac = vec3_sub(vector_c, vector_a);
+    vec3_normalize(&vector_ab);
+    vec3_normalize(&vector_ac);
+
+    // Get perpendicular from cross product and normalize
+    vec3_t normal = vec3_cross(vector_ab, vector_ac);
+    vec3_normalize(&normal);
+
+    return normal;
+}
+
 ////////////////////////////////////////////////////////////////////
 // Return the barycentric weights alpha, beta and gamma for point p
 ////////////////////////////////////////////////////////////////////
@@ -194,7 +214,7 @@ void draw_filled_triangle(
 // Draw a Textured pixel at position (x,y) using depth interpolation.
 ////////////////////////////////////////////////////////////////////
 void draw_texel(
-    int x, int y, uint32_t *texture,
+    int x, int y, upng_t *texture,
     vec4_t point_a, vec4_t point_b, vec4_t point_c,
     tex2_t a_uv, tex2_t b_uv, tex2_t c_uv)
 {
@@ -224,9 +244,13 @@ void draw_texel(
     interpolated_u /= interpolated_reciprocal_w;
     interpolated_v /= interpolated_reciprocal_w;
 
+    // Get mesh texture width and height dimensions
+    int texture_width = upng_get_width(texture);
+    int texture_height = upng_get_height(texture);
+
     // Map the UV coordinate to the full texture width and height
-    // int tex_x = abs((int)(interpolated_u * texture_width)) % texture_width;
-    // int tex_y = abs((int)(interpolated_v * texture_height)) % texture_height;
+    int tex_x = abs((int)(interpolated_u * texture_width)) % texture_width;
+    int tex_y = abs((int)(interpolated_v * texture_height)) % texture_height;
 
     // Adjust 1/w so the pixels that are closer to camera have smaller values (0).
     // and pixels further away from camera have bigger values (1)
@@ -236,12 +260,14 @@ void draw_texel(
     // This way, only render this pixel if it is closer to the camera than whatever pixel was there before
     if (interpolated_reciprocal_w < get_z_buffer_at(x, y))
     {
+        // Get the buffer of colors from the texture
+        uint32_t *texture_buffer = (uint32_t *)(upng_get_buffer(texture));
 
         // Draw a pixel at position (x,y) with the color obtained from the mapped texture
-        // draw_pixel(x, y, texture[(tex_y * texture_width) + tex_x]);
+        draw_pixel(x, y, texture_buffer[(tex_y * texture_width) + tex_x]);
 
         // Update the z-buffer value with 1/w of the current pixel
-        // update_z_buffer_at(x, y, interpolated_reciprocal_w);
+        update_z_buffer_at(x, y, interpolated_reciprocal_w);
     }
 }
 
@@ -267,7 +293,7 @@ void draw_textured_triangle(
     int x0, int y0, float z0, float w0, float u0, float v0,
     int x1, int y1, float z1, float w1, float u1, float v1,
     int x2, int y2, float z2, float w2, float u2, float v2,
-    uint32_t *texture)
+    upng_t *texture)
 {
     // Sort the vertices by ascending Y coordinates y0 < y1 < y2
     if (y0 > y1)

@@ -77,8 +77,11 @@ bool initialize_window(void)
     int full_screen_width = display_mode.w;
     int full_screen_height = display_mode.h;
 
-    window_width = full_screen_width / 3;
-    window_height = full_screen_height / 3;
+    // window_width = full_screen_width / 3;
+    // window_height = full_screen_height / 3;
+
+    window_width = full_screen_width;
+    window_height = full_screen_height;
 
     // Create SDL Window
     window = SDL_CreateWindow(
